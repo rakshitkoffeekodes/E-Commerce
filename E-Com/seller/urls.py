@@ -11,4 +11,9 @@ urlpatterns = [
     path('view_all_product/', views.view_all_product),
     path('update_product/', views.update_product),
     path('delete_product/', views.delete_product),
+    path('view_order/', views.view_order),
+    path('filter_order_date/', views.filter_order_date),
+    path('filter_dispatch_date/', views.filter_dispatch_date),
+    path('order_search/', views.order_search),
+    path('order_accept/', views.order_accept),
 ]

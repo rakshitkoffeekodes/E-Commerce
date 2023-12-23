@@ -1,7 +1,11 @@
+import calendar
 import os
+import datetime
+import random
 
 from django.conf import settings
 from django.core.files.storage import default_storage
+from django.db.models import Q
 from django.http import JsonResponse
 from rest_framework.decorators import api_view
 from django.contrib.auth.hashers import make_password, check_password
@@ -278,3 +282,160 @@ def delete_product(request):
 
     except Exception as e:
         return JsonResponse({'Message': e.__str__()})
+
+
+@api_view(['GET'])
+def view_order(request):
+    # try:
+    seller_user = Register.objects.get(email=request.session['email'])
+    buyer_order = Details.objects.filter(cart__status=True)
+    list1 = [i.order for i in buyer_order]
+    print(f'buyer {list1}')
+    buyer_all_order = Order.objects.filter(cart__product__product_seller=seller_user, cart__status=True).only('order')
+    print(f'seller {buyer_all_order}')
+    list2 = [i.order for i in buyer_all_order]
+    print(list2)
+    for i in buyer_order:
+        if i not in list2:
+            print(i not in list2)
+            c_id = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H"]
+            id2 = random.choices(c_id, k=9)
+            company = "".join(id2)
+            orders = Order()
+            orders.cart = i.cart
+            orders.product = i.cart.product
+            orders.buyer = i.cart.buyer
+            orders.qty = i.cart.qty
+            orders.product_color = i.cart.product_color
+            orders.product_size = i.cart.product_size
+            orders.total = i.cart.total
+            orders.order = i.order
+            orders.company = company
+            orders.order_date = datetime.datetime.now()
+            orders.dispatch_date = orders.order_date + datetime.timedelta(days=4)
+            # orders.save()
+        # print(orders)
+        # print("No duplicates in the list")
+    return JsonResponse({'Message': 'hi'})
+    # except Exception as e:
+    #     return JsonResponse({'Message': e.__str__()})
+
+
+@api_view(['POST'])
+def filter_order_date(request):
+    start_time = datetime.time(00, 00, 00)
+    end_time = datetime.time(23, 59, 59)
+    start_date = request.POST.get('Start Date')
+    end_date = request.POST.get('End Date')
+    try:
+        filter_data_list = []
+        seller_user = Register.objects.get(email=request.session['email'])
+        start_object = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+        start_datetime = datetime.datetime(year=start_object.year, month=start_object.month, day=start_object.day,
+                                           hour=start_time.hour, minute=start_time.minute, second=start_time.second)
+        end_object = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+        end_datetime = datetime.datetime(year=end_object.year, month=end_object.month, day=end_object.day,
+                                         hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+        filter_data = Details.objects.filter(order_date__range=(start_datetime, end_datetime),
+                                             cart_id__product_id__product_seller=seller_user, cart_id__stetus=True)
+        for i in filter_data:
+            path = request.META['HTTP_HOST']
+            path1 = ['http://' + path + '/media/' + i for i in i.cart_id.product_id.product_images]
+            i.cart_id.product_id.product_images = path1
+            data = {
+                'Order ID': i.order_id,
+                'Image': i.cart_id.product_id.product_images,
+                'Name': i.cart_id.product_id.product_name,
+                'SKU ID': i.cart_id.product_id.SKU,
+                'Company ID': i.company_id,
+                'Quantity': i.cart_id.qty,
+                'Size': i.cart_id.product_id.product_size,
+                'Dispatch Date/ SLA': i.dispatch_date
+            }
+            filter_data_list.append(data)
+        return JsonResponse({'Filter Order': filter_data_list})
+
+    except Exception as e:
+        return JsonResponse({'Message': e.__str__()})
+
+
+@api_view(['POST'])
+def filter_dispatch_date(request):
+    start_time = datetime.time(00, 00, 00)
+    end_time = datetime.time(23, 59, 59)
+    start_date = request.POST.get('Start Date')
+    end_date = request.POST.get('End Date')
+    try:
+        filter_data_list = []
+        seller_user = Register.objects.get(email=request.session['email'])
+        start_object = datetime.datetime.strptime(start_date, "%Y-%m-%d")
+        start_datetime = datetime.datetime(year=start_object.year, month=start_object.month, day=start_object.day,
+                                           hour=start_time.hour, minute=start_time.minute, second=start_time.second)
+        end_object = datetime.datetime.strptime(end_date, "%Y-%m-%d")
+        end_datetime = datetime.datetime(year=end_object.year, month=end_object.month, day=end_object.day,
+                                         hour=end_time.hour, minute=end_time.minute, second=end_time.second)
+        filter_data = Details.objects.filter(dispatch_date__range=(start_datetime, end_datetime),
+                                             cart_id__product_id__product_seller=seller_user, cart_id__stetus=True)
+        for i in filter_data:
+            path = request.META['HTTP_HOST']
+            path1 = ['http://' + path + '/media/' + i for i in i.cart_id.product_id.product_images]
+            i.cart_id.product_id.product_images = path1
+            dispatch_date = i.dispatch_date
+            dispatch_day = dispatch_date.day
+            dispatch_month = dispatch_date.strftime('%B')
+            data = {
+                'Order ID': i.order_id,
+                'Image': i.cart_id.product_id.product_images,
+                'Name': i.cart_id.product_id.product_name,
+                'SKU ID': i.cart_id.product_id.SKU,
+                'Company ID': i.company_id,
+                'Quantity': i.cart_id.qty,
+                'Size': i.cart_id.product_id.product_size,
+                'Dispatch Date/ SLA': f'{dispatch_day} {dispatch_month}'
+            }
+            filter_data_list.append(data)
+        return JsonResponse({'Filter Order': filter_data_list})
+
+    except Exception as e:
+        return JsonResponse({'Message': e.__str__()})
+
+
+@api_view(['POST'])
+def order_search(request):
+    search = request.POST['Search']
+    search_data = []
+    try:
+        seller_user = Register.objects.get(email=request.session['email'])
+        search_order = Details.objects.filter(
+            Q(order_id__icontains=search) | Q(company_id__icontains=search) | Q(
+                cart_id__product_id__SKU__icontains=search),
+            cart_id__product_id__product_seller=seller_user)
+        if search_order.count() != 0:
+            for i in search_order:
+                path = request.META['HTTP_HOST']
+                path1 = ['http://' + path + '/media/' + i for i in i.cart_id.product_id.product_images]
+                i.cart_id.product_id.product_images = path1
+                dispatch_date = i.dispatch_date
+                dispatch_day = dispatch_date.day
+                dispatch_month = dispatch_date.strftime('%B')
+                data = {
+                    'Order ID': i.order_id,
+                    'Image': i.cart_id.product_id.product_images,
+                    'Name': i.cart_id.product_id.product_name,
+                    'SKU ID': i.cart_id.product_id.SKU,
+                    'Company ID': i.company_id,
+                    'Quantity': i.cart_id.qty,
+                    'Size': i.cart_id.product_id.product_size,
+                    'Dispatch Date/ SLA': f'{dispatch_day} {dispatch_month}'
+                }
+                search_data.append(data)
+            return JsonResponse({'Message': search_data})
+        else:
+            return JsonResponse({'Message': 'Product Is Not Found'})
+    except Exception as e:
+        return JsonResponse({'Message': e.__str__()})
+
+
+@api_view(['POST'])
+def order_accept(request):
+    primary_key = request.POST['Order ID']

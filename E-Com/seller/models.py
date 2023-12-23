@@ -62,3 +62,93 @@ class Product(models.Model):
     product_fabric = models.CharField(max_length=50)
     product_description = models.TextField()
     product_seller = models.ForeignKey(Register, on_delete=models.CASCADE)
+
+
+# ==================================Buyer====================================
+class Buyer(models.Model):
+    name = models.CharField(max_length=50)
+    email = models.EmailField(max_length=50)
+    password = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.email
+
+
+# ==================Buyer Cart Model Table=====================
+class Cart(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True)
+    buyer = models.ForeignKey(Buyer, on_delete=models.CASCADE)
+    qty = models.IntegerField(default=0)
+    product_color = models.CharField(max_length=50, null=True)
+    product_size = models.CharField(max_length=50, null=True)
+    status = models.BooleanField(default=True)
+    total = models.IntegerField(default=0)
+
+    def __str__(self):
+        return str(self.buyer)
+
+
+# ==================Cehck Out Details Model Table=====================
+class Details(models.Model):
+    firstname = models.CharField(max_length=50)
+    lastname = models.CharField(max_length=50)
+    country = models.CharField(max_length=25)
+    address = models.CharField(max_length=200)
+    second_address = models.CharField(max_length=200, null=True)
+    city = models.CharField(max_length=20)
+    state = models.CharField(max_length=25)
+    postcode = models.IntegerField(default=0)
+    phone = models.CharField(max_length=124)
+    email = models.CharField(max_length=50)
+    order = models.CharField(max_length=100, null=True)
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, null=True)
+    buyer = models.ForeignKey(Buyer, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return self.order
+
+
+class Order(models.Model):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(Buyer, on_delete=models.CASCADE)
+    qty = models.IntegerField(default=0)
+    product_color = models.CharField(max_length=50)
+    product_size = models.CharField(max_length=50)
+    total = models.IntegerField(default=0)
+    order = models.CharField(max_length=20, null=True)
+    company = models.CharField(max_length=20)
+    dispatch_date = models.DateTimeField()
+    order_date = models.DateTimeField()
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.order)
+
+
+class Accept(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(Buyer, on_delete=models.CASCADE)
+    qty = models.IntegerField(default=0)
+    product_color = models.CharField(max_length=50)
+    product_size = models.CharField(max_length=50)
+    total = models.IntegerField(default=0)
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.order)
+
+
+class Cancel(models.Model):
+    order = models.ForeignKey(Order, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    buyer = models.ForeignKey(Buyer, on_delete=models.CASCADE)
+    qty = models.IntegerField(default=0)
+    product_color = models.CharField(max_length=50)
+    product_size = models.CharField(max_length=50)
+    total = models.IntegerField(default=0)
+    status = models.BooleanField(default=True)
+
+    def __str__(self):
+        return str(self.order)
