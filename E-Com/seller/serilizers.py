@@ -6,3 +6,33 @@ class RegisterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Register
         fields = '__all__'
+
+
+class ProdcutSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Product
+        fields = '__all__'
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
+
+
+class AcceptSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Accept
+        fields = '__all__'
+
+
+class CancelSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Cancel
+        fields = '__all__'
+
+
+class BarcodeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Barcode
+        fields = '__all__'

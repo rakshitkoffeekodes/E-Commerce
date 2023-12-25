@@ -16,4 +16,6 @@ urlpatterns = [
     path('filter_dispatch_date/', views.filter_dispatch_date),
     path('order_search/', views.order_search),
     path('order_accept/', views.order_accept),
+    path('view_accept_order/', views.view_accept_order),
+    path('order_label/', views.order_label),
 ]
