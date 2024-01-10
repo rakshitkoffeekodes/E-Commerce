@@ -1,40 +1,43 @@
 from django.db import models
 from seller.models import *
+from datetime import datetime
+from django.contrib.auth.models import User
 
 
-# Create your models here.
 class BuyerRegistration(models.Model):
-    user_id = models.AutoField(primary_key=True)
-    user_firstname = models.CharField(max_length=255)
-    user_lastname = models.CharField(max_length=255)
+    user = models.AutoField(primary_key=True)
     user_address = models.TextField(max_length=255)
-    user_photo = models.FileField(default='defult.jpg', upload_to='buyer/', null=True)
-    user_mobile_no = models.CharField(max_length=12, unique=True)
-    user_email_id = models.CharField(max_length=255, unique=True)
-    user_password = models.CharField(max_length=16)
+    user_photo = models.ImageField(default='default.jpg', upload_to='buyer/', null=True)
+    user_mobile_no = models.CharField(max_length=12, unique=True, default=None, null=True)
+    buyer = models.ForeignKey(User, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.user_firstname + " " + self.user_lastname
+        return str(self.buyer)
+
+    class Meta:
+        db_table = "Buyer_Registration"
 
 
 class BuyerCart(models.Model):
-    product = models.ForeignKey("seller.Product", on_delete=models.CASCADE, null=True)
-    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
+    Cart = models.AutoField(primary_key=True)
     qty = models.PositiveIntegerField(default=0)
     date_added = models.DateTimeField(auto_now_add=True)
     total = models.IntegerField(default=0)
     product_color = models.CharField(max_length=50, null=True)
     product_size = models.CharField(max_length=50, null=True)
     status = models.BooleanField(default=True)
+    product = models.ForeignKey("seller.Product", on_delete=models.CASCADE)
+    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
 
     def __str__(self):
-        return str(self.buyer)
+        return f"{self.product}, {self.product_color},{self.buyer},{self.qty},{self.total}"
+
+    class Meta:
+        db_table = "Buyer_Cart"
 
 
-class Checkout_details(models.Model):
-    address = models.AutoField(primary_key=True, default=None)
-    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE, null=True)
-    cart = models.ForeignKey(BuyerCart, on_delete=models.CASCADE, null=True)
+class Buyer_checkout_details(models.Model):
+    address = models.AutoField(primary_key=True)
     street_address = models.CharField(max_length=100)
     apartment_address = models.CharField(max_length=100)
     pincode = models.IntegerField()
@@ -59,41 +62,85 @@ class Checkout_details(models.Model):
     ord_rec_name = models.CharField(max_length=255)
     ord_rec_mobile_no = models.CharField(max_length=12)
     status = models.BooleanField(default=True)
+    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
+
+    class Meta:
+        db_table = "Buyer_Checkout_details"
+
     def __str__(self):
         return str(self.buyer)
 
 
-class Payment(models.Model):
-    order = models.CharField(max_length=100)
+class BuyerPurchase(models.Model):
+    purchase = models.AutoField(primary_key=True)
+    total = models.IntegerField(default=0)
+    qty = models.PositiveIntegerField(default=0)
+    product = models.ForeignKey("seller.Product", on_delete=models.CASCADE)
+    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
     cart = models.ForeignKey(BuyerCart, on_delete=models.CASCADE, null=True)
-    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
-    details = models.ForeignKey(Checkout_details, on_delete=models.CASCADE)
+    checkout = models.ForeignKey(Buyer_checkout_details, on_delete=models.CASCADE)
 
     def __str__(self):
-        return self.order
+        return str(self.buyer) + " " + str(self.product)
+
+    class Meta:
+        db_table = "Buyer_Purchase"
 
 
-class Return(models.Model):
+class BuyerPayment(models.Model):
+    payment = models.AutoField(primary_key=True)
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('success', 'Success'),
+        ('failed', 'Failed'),
+    ]
+
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=3, default='IND')
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    payment_intent_id = models.CharField(max_length=50)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    order_key = models.CharField(max_length=100, null=True)
+    cancel = models.BooleanField(default=True)
+    details = models.ForeignKey(BuyerPurchase, on_delete=models.CASCADE)
     buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
-    order = models.ForeignKey(Payment, on_delete=models.CASCADE)
-    returns = models.CharField(max_length=100)
-    order_return_message = models.CharField(max_length=100, null='N/A')
-    return_shipping_Fee = models.IntegerField(default=0)
-    return_date = models.DateTimeField(null=True)
-    status = models.BooleanField(default=True)
 
     def __str__(self):
-        return str(self.order)
+        return f"{self.amount} {self.currency} "
+
+    class Meta:
+        db_table = "Buyer_Payment"
 
 
 class BuyerFeedback(models.Model):
-    feedback_id = models.AutoField(primary_key=True, null=False)
-    feedback_login = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
-    feedback_product = models.ForeignKey("seller.Product", on_delete=models.CASCADE, null=True)
-    feedback_description = models.TextField(max_length=500)
+    feedback = models.AutoField(primary_key=True)
+    feedback_description = models.TextField(max_length=500, null=False)
     feedback_datetime = models.DateTimeField(auto_now_add=True)
-    feedback_rating = models.IntegerField()
+    feedback_rating = models.IntegerField(null=False)
     feedback_photo = models.FileField(upload_to='buyer/', null=True)
+    feedback_product = models.ForeignKey("seller.Product", on_delete=models.CASCADE)
+    feedback_login = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
 
     def __str__(self):
-        return str(self.feedback_login)
+        return f"{self.feedback} - {self.feedback_description}"
+
+    class Meta:
+        db_table = "Buyer_feedback"
+
+
+class Return(models.Model):
+    order_return = models.AutoField(primary_key=True)
+    returns = models.CharField(max_length=100)
+    order_return_message = models.CharField(max_length=100, null='N/A')
+    return_shipping_Fee = models.IntegerField(default=0)
+    return_date = models.DateTimeField(null=True, default=datetime.now)
+    status = models.BooleanField(default=True)
+    buyer = models.ForeignKey(BuyerRegistration, on_delete=models.CASCADE)
+    order = models.ForeignKey(BuyerPayment, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.order} {self.buyer}"
+
+    class Meta:
+        db_table = "Buyer_Return"
